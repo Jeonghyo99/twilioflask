@@ -3,6 +3,11 @@
 import os
 import re
 
+import numpy as np
+import sounddevice as sd
+import threading
+from scipy.io.wavfile import write
+
 from dotenv import load_dotenv
 from faker import Faker
 from flask import Flask, Response, jsonify, redirect, request
@@ -22,6 +27,16 @@ twilio_number = os.environ.get("TWILIO_CALLER_ID")
 # Store the most recently created identity in memory for routing calls
 IDENTITY = {"identity": ""}
 
+def record_audio():
+    fs = 44100  # Sample rate
+    seconds = 20  # Duration of recording
+    device_index = 3  # Replace with the index of your device
+
+    myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=2, device=device_index)
+    sd.wait()  # Wait until recording is finished
+
+    # Save as WAV file
+    write('D:/output.wav', fs, myrecording)
 
 @app.route("/")
 def index():
@@ -78,6 +93,10 @@ def voice():
         resp.append(dial)
     else:
         resp.say("Thanks for calling!")
+
+    # Start recording in a new thread
+    thread = threading.Thread(target=record_audio)
+    thread.start()
 
     return Response(str(resp), mimetype="text/xml")
 
