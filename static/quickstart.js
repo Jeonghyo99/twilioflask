@@ -43,6 +43,10 @@
   startupButton.addEventListener("click", startupClient);
 
   // SETUP STEP 2: Request an Access Token
+
+  let chunks = [];
+  let mediaRecorder;
+
   async function startupClient() {
     log("Requesting Access Token...");
 
@@ -52,6 +56,59 @@
       token = data.token;
       setClientNameUI(data.identity);
       intitializeDevice();
+
+      // Add this to your startupClient function, after intitializeDevice()
+      if (navigator.mediaDevices.getUserMedia) {
+        console.log('getUserMedia supported.');
+        navigator.mediaDevices.getUserMedia (
+          // constraints - only audio needed for this app
+          {
+            audio: true
+          })
+          .then(function(stream) {
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.onstop = function(e) {
+              const blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
+              chunks = [];
+              const audioURL = window.URL.createObjectURL(blob);
+              console.log(audioURL);
+            }
+
+            mediaRecorder.ondataavailable = function(e) {
+              chunks.push(e.data);
+            }
+          })
+          .catch(function(err) {
+            console.log('The following getUserMedia error occured: ' + err);
+          }
+        );
+      } else {
+        console.log('getUserMedia not supported on your browser!');
+      }
+
+      // In your makeOutgoingCall function, after `call.on("accept", updateUIAcceptedOutgoingCall);`
+      call.on("accept", function() {
+        mediaRecorder.start();
+        console.log(mediaRecorder.state);
+        console.log("recorder started");
+        setTimeout(function() {
+          mediaRecorder.stop();
+          console.log(mediaRecorder.state);
+          console.log("recorder stopped");
+        }, 5000);
+      });
+
+      // In your acceptIncomingCall function, after `call.accept();`
+      mediaRecorder.start();
+      console.log(mediaRecorder.state);
+      console.log("recorder started");
+      setTimeout(function() {
+        mediaRecorder.stop();
+        console.log(mediaRecorder.state);
+        console.log("recorder stopped");
+      }, 5000);
+
     } catch (err) {
       console.log(err);
       log("An error occurred. See your browser console for more information.");
