@@ -117,8 +117,6 @@
       // Twilio.Device.connect() returns a Call object
       const call = await device.connect({ params });
 
-      // Add this line to trigger the server to start recording
-      $.get("/record");
 
       // add listeners to the Call
       // "accepted" means the call has finished connecting and the state is now "open"

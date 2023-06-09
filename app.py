@@ -27,16 +27,29 @@ twilio_number = os.environ.get("TWILIO_CALLER_ID")
 # Store the most recently created identity in memory for routing calls
 IDENTITY = {"identity": ""}
 
+is_call_ongoing = False
+
 def record_audio():
     fs = 44100  # Sample rate
-    seconds = 20  # Duration of recording
+    seconds = 5  # Duration of recording
     device_index = 3  # Replace with the index of your device
 
-    myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=2, device=device_index)
-    sd.wait()  # Wait until recording is finished
+    # Initialize the counter
+    counter = 1
 
-    # Save as WAV file
-    write('D:/output.wav', fs, myrecording)
+    while is_call_ongoing:
+        myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=2, device=device_index)
+        sd.wait()  # Wait until recording is finished
+
+        # Create a filename with the counter
+        filename = 'D:/output_{:04d}.wav'.format(counter)
+
+        # Save as WAV file
+        write(filename, fs, myrecording)
+
+        # Increase the counter
+        counter += 1
+
 
 @app.route("/")
 def index():
@@ -74,6 +87,8 @@ def token():
 
 @app.route("/voice", methods=["POST"])
 def voice():
+    global is_call_ongoing
+
     resp = VoiceResponse()
     if request.form.get("To") == twilio_number:
         # Receiving an incoming call to our Twilio number
@@ -95,11 +110,19 @@ def voice():
         resp.say("Thanks for calling!")
 
     # Start recording in a new thread
+    is_call_ongoing = 1
     thread = threading.Thread(target=record_audio)
     thread.start()
 
     return Response(str(resp), mimetype="text/xml")
 
+@app.route("/call-status", methods=["POST"])
+def call_status():
+    global is_call_ongoing
+    call_status = request.values.get('CallStatus', None)
+    if call_status == 'completed':
+        is_call_ongoing = False
+    return ('', 204)
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
