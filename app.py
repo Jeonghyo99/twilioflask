@@ -6,6 +6,9 @@ import re
 import numpy as np
 import sounddevice as sd
 import threading
+import subprocess
+
+from pyannote.audio.pipelines import VoiceActivityDetection
 from scipy.io.wavfile import write
 
 from dotenv import load_dotenv
@@ -29,6 +32,65 @@ IDENTITY = {"identity": ""}
 
 is_call_ongoing = False
 
+# Initialize a global counter for folder names
+folder_counter = 0
+
+
+# voice activity detection 모델 세팅 (app.py에 들어가야 할 듯)
+
+# 1. visit hf.co/pyannote/segmentation and accept user conditions
+# 2. visit hf.co/settings/tokens to create an access token
+# 3. instantiate pretrained model
+from pyannote.audio import Model
+model = Model.from_pretrained("pyannote/segmentation",
+                              use_auth_token="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")
+
+HYPER_PARAMETERS = {
+  # onset/offset activation thresholds
+  "onset": 0.684, "offset": 0.577,
+  # remove speech regions shorter than that many seconds.
+  "min_duration_on": 0.181,
+  # fill non-speech regions shorter than that many seconds.
+  "min_duration_off": 0.037
+}
+
+pipeline = VoiceActivityDetection(segmentation=model)
+pipeline.instantiate(HYPER_PARAMETERS)
+
+def process_audio(filename):
+    global folder_counter
+
+    # Increase the counter
+    folder_counter += 1
+
+    # Make sure the output directory exists
+    os.makedirs(f"D:/segments_{str(folder_counter).zfill(4)}", exist_ok=True)
+
+    # Use VAD on the audio file
+    vad1 = pipeline(filename)
+
+    # Get the timeline from the vad Annotation
+    timeline = vad1.get_timeline()
+
+    # Process each segment
+    for i, segment in enumerate(timeline):
+        # Calculate start and end times in seconds
+        start_s = segment.start
+        duration_s = segment.duration
+
+        # Construct the ffmpeg command
+        command = [
+            'ffmpeg',
+            '-i', filename,  # input file
+            '-ss', str(start_s),  # start time
+            '-t', str(duration_s),  # duration
+            '-vn',  # no video
+            f"D:/segments_{str(folder_counter).zfill(4)}/segment_{i}.wav"  # output file
+        ]
+
+        # Run the command
+        subprocess.run(command, check=True)
+
 def record_audio():
     fs = 44100  # Sample rate
     seconds = 5  # Duration of recording
@@ -43,12 +105,15 @@ def record_audio():
 
         # Create a filename with the counter
         filename = 'D:/output_{:04d}.wav'.format(counter)
+        # Increase the counter
+        counter += 1
 
         # Save as WAV file
         write(filename, fs, myrecording)
 
-        # Increase the counter
-        counter += 1
+        # Process the audio in a new thread
+        thread = threading.Thread(target=process_audio, args=(filename,))
+        thread.start()
 
 
 @app.route("/")
@@ -123,6 +188,7 @@ def call_status():
     if call_status == 'completed':
         is_call_ongoing = False
     return ('', 204)
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
