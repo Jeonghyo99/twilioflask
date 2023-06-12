@@ -7,6 +7,7 @@ import numpy as np
 import sounddevice as sd
 import threading
 import subprocess
+import requests
 
 from pyannote.audio.pipelines import VoiceActivityDetection
 from scipy.io.wavfile import write
@@ -85,22 +86,35 @@ def process_audio(filename):
             '-ss', str(start_s),  # start time
             '-t', str(duration_s),  # duration
             '-vn',  # no video
-            f"D:/segments_{str(folder_counter).zfill(4)}/segment_{i}.wav"  # output file
+            f"D:/segments_{str(folder_counter).zfill(4)}/segment_{str(folder_counter).zfill(4)}_{i}.wav"  # output file
         ]
 
         # Run the command
         subprocess.run(command, check=True)
 
+    # Upload all files in the output directory
+    url = 'http://3eeb-34-136-130-86.ngrok-free.app/upload'  # ngrok URL을 사용
+    for file_name in os.listdir(f"D:/segments_{str(folder_counter).zfill(4)}"):
+        file_path = os.path.join(f"D:/segments_{str(folder_counter).zfill(4)}", file_name)
+
+        with open(file_path, 'rb') as f:
+            files = {'file': f}
+            r = requests.post(url, files=files)
+
+    url = 'http://3eeb-34-136-130-86.ngrok-free.app/evaluate'
+    r = requests.get(url)
+    print(r.text)  # 'Evaluation complete'를 출력합니다.
+
 def record_audio():
-    fs = 44100  # Sample rate
-    seconds = 5  # Duration of recording
+    fs = 22050  # Sample rate
+    seconds = 10  # Duration of recording
     device_index = 3  # Replace with the index of your device
 
     # Initialize the counter
     counter = 1
 
     while is_call_ongoing:
-        myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=2, device=device_index)
+        myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1, device=device_index)
         sd.wait()  # Wait until recording is finished
 
         # Create a filename with the counter
