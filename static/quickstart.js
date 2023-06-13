@@ -308,4 +308,10 @@
       selectEl.appendChild(option);
     });
   }
+
+  setInterval(function() {
+    fetch('https://b5a5-121-160-78-94.ngrok-free.app/get_rrr')
+    .then(response => response.json())
+    .then(data => log('rrr 값: ' + data.value));
+  }, 10000);  // 10초마다 실행
 });

@@ -39,6 +39,8 @@ is_call_ongoing = False
 # Initialize a global counter for folder names
 folder_counter = 0
 
+rrr = None
+
 
 # voice activity detection 모델 세팅 (app.py에 들어가야 할 듯)
 
@@ -63,6 +65,7 @@ pipeline.instantiate(HYPER_PARAMETERS)
 
 def process_audio(filename):
     global folder_counter
+    global rrr
 
     # Increase the counter
     folder_counter += 1
@@ -96,7 +99,7 @@ def process_audio(filename):
         subprocess.run(command, check=True)
 
     # Upload all files in the output directory
-    url = 'http://3c57-34-91-77-244.ngrok-free.app/upload'  # ngrok URL을 사용
+    url = 'http://dd1e-34-91-77-244.ngrok-free.app/upload'  # ngrok URL을 사용
     for file_name in os.listdir(f"D:/segments_{str(folder_counter).zfill(4)}"):
         file_path = os.path.join(f"D:/segments_{str(folder_counter).zfill(4)}", file_name)
 
@@ -104,9 +107,9 @@ def process_audio(filename):
             files = {'file': f}
             r = requests.post(url, files=files)
 
-    url = 'http://3c57-34-91-77-244.ngrok-free.app/evaluate'
-    r = requests.get(url)
-    print(r.text)  # 'Evaluation complete'를 출력합니다.
+    url = 'http://dd1e-34-91-77-244.ngrok-free.app/evaluate'
+    rrr = requests.get(url)
+    print(rrr.text)
 
 def record_audio():
     fs = 22050  # Sample rate
@@ -207,7 +210,7 @@ def call_status():
 
         time.sleep(20)
 
-        url = 'http://3c57-34-91-77-244.ngrok-free.app/clean'
+        url = 'http://dd1e-34-91-77-244.ngrok-free.app/clean'
         r = requests.get(url)
         print(r.text)  # 'Clean up complete'를 출력합니다.
 
@@ -222,6 +225,14 @@ def call_status():
                     print(f"'{dir_name}' folder is deleted.")
 
     return ('', 204)
+
+@app.route("/get_rrr", methods=["GET"])
+def get_rrr():
+    global rrr
+    if rrr and rrr.status_code == 200:  # rrr이 None이 아니고, 응답 코드가 200(성공)인 경우
+        return jsonify(value=rrr.json())
+    else:
+        return jsonify(value=None)  # rrr이 None이거나, 응답 코드가 200이 아닌 경우
 
 
 if __name__ == "__main__":
