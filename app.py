@@ -2,6 +2,9 @@
 
 import os
 import re
+import time
+import shutil
+import fnmatch
 
 import numpy as np
 import sounddevice as sd
@@ -93,7 +96,7 @@ def process_audio(filename):
         subprocess.run(command, check=True)
 
     # Upload all files in the output directory
-    url = 'http://3eeb-34-136-130-86.ngrok-free.app/upload'  # ngrok URL을 사용
+    url = 'http://3c57-34-91-77-244.ngrok-free.app/upload'  # ngrok URL을 사용
     for file_name in os.listdir(f"D:/segments_{str(folder_counter).zfill(4)}"):
         file_path = os.path.join(f"D:/segments_{str(folder_counter).zfill(4)}", file_name)
 
@@ -101,7 +104,7 @@ def process_audio(filename):
             files = {'file': f}
             r = requests.post(url, files=files)
 
-    url = 'http://3eeb-34-136-130-86.ngrok-free.app/evaluate'
+    url = 'http://3c57-34-91-77-244.ngrok-free.app/evaluate'
     r = requests.get(url)
     print(r.text)  # 'Evaluation complete'를 출력합니다.
 
@@ -201,6 +204,23 @@ def call_status():
     call_status = request.values.get('CallStatus', None)
     if call_status == 'completed':
         is_call_ongoing = False
+
+        time.sleep(20)
+
+        url = 'http://3c57-34-91-77-244.ngrok-free.app/clean'
+        r = requests.get(url)
+        print(r.text)  # 'Clean up complete'를 출력합니다.
+
+        dir_pattern = 'segments_*'
+        dir_path = 'D:\\'
+
+        for dir_name in os.listdir(dir_path):
+            if fnmatch.fnmatch(dir_name, dir_pattern):
+                full_dir_path = os.path.join(dir_path, dir_name)
+                if os.path.isdir(full_dir_path):
+                    shutil.rmtree(full_dir_path)
+                    print(f"'{dir_name}' folder is deleted.")
+
     return ('', 204)
 
 
