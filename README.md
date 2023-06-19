@@ -1,6 +1,16 @@
-<a href="https://www.twilio.com">
-  <img src="https://static0.twilio.com/marketing/bundles/marketing/img/logos/wordmark-red.svg" alt="Twilio" width="250" />
-</a>
+# FVI calling server and client
+
+스테레오나 루프백 장치가 기기에서 지원되지 않는 경우,
+VB-Cable을 루프백 구현에 사용하고, voicemeeter를 루프백되는 오디오의 스피커 동시 출력에 이용하세요.
+
+VAD(Voice Activity Detection) 모델 구동을 위한 스크립트 :
+```bash
+pip install sounddevice scipy
+
+pip install -qq https://github.com/pyannote/pyannote-audio/archive/refs/heads/develop.zip
+
+pip install pyannote.audio
+```
 
 # Twilio Voice JavaScript SDK Quickstart for Python
 
