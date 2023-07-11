@@ -49,7 +49,7 @@ rrr = None
 # 3. instantiate pretrained model
 from pyannote.audio import Model
 model = Model.from_pretrained("pyannote/segmentation",
-                              use_auth_token="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")
+                              use_auth_token="your_VAD_token")
 
 HYPER_PARAMETERS = {
   # onset/offset activation thresholds
